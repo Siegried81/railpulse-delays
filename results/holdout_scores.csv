@@ -1,0 +1,5 @@
+,auc,brier
+baseline (train late rate),0.5,0.064
+"logistic, planning",0.591,0.064
+"boosting, planning",0.6182,0.0635
+"logistic, live (+ previous stop delay)",0.9236,0.0235

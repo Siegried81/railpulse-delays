@@ -1,0 +1,28 @@
+{
+  "bus_stops_dropped": 1868,
+  "bus_late": 0,
+  "raw_rows": 980868,
+  "stop_events_analysed": 97146,
+  "stop_events_total": 99014,
+  "snapshots_per_stop": 9.9,
+  "runs": 11662,
+  "stations": 598,
+  "days": [
+    "2026-07-27",
+    "2026-08-07"
+  ],
+  "seen_after_departure_share": 0.798,
+  "late_rate": 0.076,
+  "category_counts": {
+    "S": 34499,
+    "IC": 30553,
+    "L": 16633,
+    "unknown": 13453,
+    "P": 1336,
+    "other": 672
+  },
+  "se_inflation_median": 2.56,
+  "train_stops": 58374,
+  "test_stops": 38772,
+  "test_late_rate": 0.0686
+}

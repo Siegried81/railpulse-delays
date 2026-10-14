@@ -1,0 +1,14 @@
+,clustered_se_over_naive_se
+"C(hour_band, Treatment('daytime (9-16h)'))[T.early (<6h)]",2.7177707340865753
+"C(hour_band, Treatment('daytime (9-16h)'))[T.evening peak (16-19h)]",2.644472377714788
+"C(hour_band, Treatment('daytime (9-16h)'))[T.late (19h+)]",2.5645652984636764
+"C(hour_band, Treatment('daytime (9-16h)'))[T.morning peak (6-9h)]",2.636829145273525
+"C(category, Treatment('IC'))[T.L]",2.7656188424976094
+"C(category, Treatment('IC'))[T.P]",2.0268485409322863
+"C(category, Treatment('IC'))[T.S]",2.8601906317332997
+"C(category, Treatment('IC'))[T.other]",2.115561777551301
+"C(category, Treatment('IC'))[T.unknown]",2.838762299490718
+weekend,2.4191452541751888
+brussels_junction,1.3681235240095082
+log_station_stops_per_day,1.6561384870121358
+trip_progress,1.3669929855404714

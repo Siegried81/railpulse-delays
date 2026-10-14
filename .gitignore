@@ -1,0 +1,5 @@
+.venv/
+__pycache__/
+.pytest_cache/
+# personal study notes, kept local
+GUIDE_FR.md
