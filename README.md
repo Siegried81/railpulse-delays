@@ -92,5 +92,16 @@ python -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python run_analysis.py [DATA_DIR]   # default ../railpulse-genai/data
 ```
 
+Or in Docker. The dataset is mounted at `/data`, and `results/` and
+`figures/` are mounted back so the outputs land on the host:
+
+```bash
+docker build -t railpulse-delays .
+docker run --rm \
+  -v "$PWD/../railpulse-genai/data:/data" \
+  -v "$PWD/results:/app/results" \
+  -v "$PWD/figures:/app/figures" railpulse-delays
+```
+
 `src/prepare.py` builds stop events and features, `src/model.py` fits and
 scores the models, `run_analysis.py` writes `results/` and `figures/`.
