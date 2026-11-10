@@ -60,7 +60,7 @@ def main() -> None:
         (df.groupby(col)["late"].agg(late_rate="mean", stops="size")
            .to_csv(RESULTS / f"late_rate_by_{col}.csv"))
 
-    # 1. Explanatory model on all data, naive vs clustered standard errors.
+    # 1. Explanatory model on all data, naive vs two-way clustered errors.
     naive = model.fit_logit(df, model.PLANNING_FORMULA, cluster=None)
     clustered = model.fit_logit(df, model.PLANNING_FORMULA)
     or_naive = model.odds_ratio_table(naive)
@@ -69,6 +69,22 @@ def main() -> None:
     se_ratio = (clustered.bse / naive.bse).drop("Intercept")
     se_ratio.rename("clustered_se_over_naive_se").to_csv(RESULTS / "se_inflation.csv")
     facts["se_inflation_median"] = round(float(se_ratio.median()), 2)
+
+    # How much the Brussels interval depends on the clusters. Its variable only
+    # changes between stations, so clustering by run alone was too optimistic.
+    # Day clusters are shown but not trusted: 12 days is too few.
+    choices = {"naive": None, "run": "run_id", "station": "station_id",
+               "run + station": model.TWO_WAY, "day": "service_date"}
+    rows = {}
+    for name, cluster in choices.items():
+        fit = clustered if cluster == model.TWO_WAY else model.fit_logit(
+            df, model.PLANNING_FORMULA, cluster=cluster)
+        row = model.odds_ratio_table(fit).loc["brussels_junction"]
+        rows[name] = {"se": fit.bse["brussels_junction"], **row.to_dict()}
+    pd.DataFrame(rows).T.rename_axis("clusters").round(4).to_csv(
+        RESULTS / "brussels_se_by_clusters.csv")
+    facts["brussels_junction_stations"] = int(
+        df.loc[df["brussels_junction"] == 1, "station_id"].nunique())
 
     # Sensitivity 1: only stops whose last snapshot came after the planned
     # departure, i.e. a delay observed rather than announced.

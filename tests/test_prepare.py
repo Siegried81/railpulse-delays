@@ -1,6 +1,8 @@
 """Tests for the stop-event reconstruction: the steps that decide what a row is."""
 
+import numpy as np
 import pandas as pd
+import statsmodels.formula.api as smf
 import pytest
 
 from src import model, prepare
@@ -95,3 +97,31 @@ def test_booster_refuses_uncast_text_features():
 def test_readable_term_names():
     assert model._readable("C(category, Treatment('IC'))[T.L]") == "category = L"
     assert model._readable("weekend") == "weekend"
+
+
+def _clustered_data():
+    rng = np.random.default_rng(0)
+    n = 600
+    df = pd.DataFrame({"run_id": rng.integers(0, 60, n).astype(str),
+                       "station_id": rng.integers(0, 12, n).astype(str),
+                       "x": rng.normal(size=n)})
+    df["late"] = (rng.random(n) < 1 / (1 + np.exp(1 - 0.5 * df["x"]))).astype(int)
+    return df
+
+
+def test_default_errors_are_clustered_by_run_and_station():
+    df = _clustered_data()
+    fit = model.fit_logit(df, "late ~ x")
+    groups = np.column_stack([pd.factorize(df["run_id"])[0],
+                              pd.factorize(df["station_id"])[0]])
+    by_hand = smf.logit("late ~ x", data=df).fit(
+        disp=False, cov_type="cluster", cov_kwds={"groups": groups})
+    assert fit.cov_kwds["groups"].shape == (len(df), 2)
+    assert np.allclose(fit.bse, by_hand.bse)
+
+
+def test_one_way_clusters_still_work_and_three_are_refused():
+    df = _clustered_data()
+    assert model.fit_logit(df, "late ~ x", cluster="run_id").cov_kwds["groups"].ndim == 1
+    with pytest.raises(ValueError):
+        model.fit_logit(df, "late ~ x", cluster=("run_id", "station_id", "x"))

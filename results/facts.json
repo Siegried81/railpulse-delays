@@ -21,7 +21,8 @@
     "P": 1336,
     "other": 672
   },
-  "se_inflation_median": 2.56,
+  "se_inflation_median": 2.7,
+  "brussels_junction_stations": 5,
   "train_stops": 58374,
   "test_stops": 38772,
   "test_late_rate": 0.0686

@@ -2,10 +2,11 @@
 
 The explanatory model is a logistic regression: each coefficient becomes an
 odds ratio ("this factor multiplies the odds of a late departure by X"), with
-a confidence interval. Stops of the same train are not independent (a train
-late at one station is usually late at the next), so standard errors are
-clustered by run; treating 99k stops as 99k independent draws would make every
-interval far too narrow.
+a confidence interval. Stops aren't independent. A train late at one station
+is usually late at the next, and stops at one station share its tracks and
+its crowds. So standard errors are clustered two ways, by run and by station.
+Treating 97k stops as 97k independent draws would make every interval far too
+narrow.
 
 A gradient-boosted model is fitted on the same variables only as a yardstick:
 if it predicts much better, the readable model is missing structure.
@@ -35,12 +36,27 @@ PLANNING_FEATURES = ["hour_band", "weekend", "category", "brussels_junction",
                      "log_station_stops_per_day", "trip_progress"]
 
 
-def fit_logit(df: pd.DataFrame, formula: str, cluster: str | None = "run_id"):
-    """Fit a logistic regression, clustering standard errors by `cluster`."""
+# `brussels_junction` only changes between stations, and only 5 stations have
+# it. Clustering by run alone ignores that, so its interval came out too narrow.
+TWO_WAY = ("run_id", "station_id")
+
+
+def fit_logit(df: pd.DataFrame, formula: str,
+              cluster: str | tuple[str, ...] | None = TWO_WAY):
+    """Fit a logistic regression with standard errors clustered by `cluster`.
+
+    One column name gives one-way clusters. Two names give two-way clusters:
+    statsmodels takes a 2-column `groups` array for that. None gives the naive
+    (independent stops) errors.
+    """
     model = smf.logit(formula, data=df)
     if cluster is None:
         return model.fit(disp=False)
-    groups = pd.factorize(df[cluster])[0]
+    cols = [cluster] if isinstance(cluster, str) else list(cluster)
+    if len(cols) > 2:
+        raise ValueError("statsmodels clusters on one or two columns, not more")
+    codes = [pd.factorize(df[c])[0] for c in cols]
+    groups = codes[0] if len(codes) == 1 else np.column_stack(codes)
     return model.fit(disp=False, cov_type="cluster", cov_kwds={"groups": groups})
 
 

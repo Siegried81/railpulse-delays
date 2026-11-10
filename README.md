@@ -31,10 +31,11 @@ Two traps decide every number downstream, and both are tested in
 
 ## Method
 
-- **Logistic regression with standard errors clustered by train run.** Stops of
-  one train are correlated (a late train stays late), so treating 97k stops as
-  independent understates every interval: clustered standard errors are
-  **2.6× wider** than the naive ones (median over terms).
+- **Logistic regression with standard errors clustered two ways, by train run
+  and by station.** Stops of one train are correlated (a late train stays
+  late), and so are stops at one station. Treating 97k stops as independent
+  understates every interval: the clustered standard errors are **2.7× wider**
+  than the naive ones (median over terms).
 - **Two sensitivity analyses:** a fixed effect per day (absorbs weather and
   incidents), and only stops whose delay was observed after departure.
 - **Temporal hold-out:** fit on 27 Jul – 3 Aug, score on 4 – 7 Aug.
@@ -48,19 +49,25 @@ Odds ratios against a daytime intercity stop on a weekday, outside Brussels
 
 | Factor | Odds ratio | 95% CI |
 |---|---|---|
-| Evening peak (16–19h) | **1.39** | 1.19 – 1.63 |
-| Morning peak (6–9h) | 0.74 | 0.61 – 0.91 |
-| Local train (L) vs IC | 0.49 | 0.39 – 0.61 |
-| International / other | 1.81 | 1.08 – 3.04 |
-| Position along the trip (start → end) | **1.42** | 1.29 – 1.57 |
-| Brussels North–South junction | 1.11 | 0.98 – 1.27 |
-| Station size (per e-fold of daily stops) | 1.02 | 0.98 – 1.07 |
+| Evening peak (16-19h) | **1.39** | 1.18 to 1.64 |
+| Morning peak (6-9h) | 0.74 | 0.61 to 0.91 |
+| Local train (L) vs IC | 0.49 | 0.37 to 0.63 |
+| International / other | 1.81 | 0.93 to 3.55 |
+| Position along the trip (start → end) | **1.42** | 1.26 to 1.61 |
+| Brussels North-South junction | 1.11 | 0.92 to 1.34 |
+| Station size (per e-fold of daily stops) | 1.02 | 0.97 to 1.08 |
 
 ![odds ratios](figures/odds_ratios_planning.png)
 
 - **The Brussels junction's excess is confounding.** Raw: 10.1% late against
-  7.4% elsewhere. Controlled for hour and train type, the effect is not
-  distinguishable from zero.
+  7.4% elsewhere (odds ratio 1.40). Controlled for hour and train type, it
+  drops to 1.11 and isn't distinguishable from 1 (no effect, p = 0.26).
+- **The Brussels interval depends on the clusters.** `brussels_junction` only
+  changes between stations, and only 5 stations have it. Clustered by run
+  alone, its standard error was 0.066 and the interval 0.98 to 1.27. By station
+  it's 0.084, by run and station 0.095, which gives the 0.92 to 1.34 above
+  (`results/brussels_se_by_clusters.csv`). Day clusters are in that file but not
+  trusted: 12 days is too few.
 - **Delay accumulates along the trip**, and the evening peak is the riskiest
   window. The morning peak is *less* risky than daytime: summer holidays,
   so this is not expected to hold in term time.
@@ -84,11 +91,19 @@ Twelve summer days, one weekend; no incident, weather or connection data; trip
 position is measured over the 598 polled stations only; 13% of stops have no
 train category in the static GTFS; correlation, not causation.
 
+The Brussels interval is the shakiest number here. Clustered standard errors get
+unreliable with few clusters (Cameron and Miller, 2015), and only 5 stations
+carry the Brussels effect. A wild cluster bootstrap would be the cleaner
+test. It isn't run here: with a logit and 5 treated stations it's not simple,
+and it can still mislead (MacKinnon and Webb, 2017). So read 0.92 to 1.34 as
+rough. The conclusion doesn't lean on it, though: the narrowest clustered
+version (by run only) already contains 1.
+
 ## Run it
 
 ```bash
 python -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python -m pytest -q          # 14 tests
+.venv/bin/python -m pytest -q          # 16 tests
 .venv/bin/python run_analysis.py [DATA_DIR]   # default ../railpulse-genai/data
 ```
 
